@@ -43,3 +43,13 @@ Nhóm 17 → Giao tiếp / An toàn người bệnh).
 ## Lưu ý
 
 Tiến độ lưu trong trình duyệt (localStorage) của từng máy; đổi máy/trình duyệt hoặc xóa dữ liệu duyệt web sẽ mất tiến độ.
+
+## Bản bảo mật – Google Apps Script (khuyến nghị)
+
+Thư mục `apps-script/` chứa bản chạy trên Google Apps Script: ngân hàng câu hỏi nằm trong Google Sheet riêng tư,
+chỉ email trường đăng nhập được, trình duyệt chỉ nhận câu hỏi **không kèm đáp án**; đáp án chỉ gửi sau khi nộp.
+Tiến độ và kết quả lưu trên Google Sheet (trang `TienDo`, `KetQua`).
+
+- Cài đặt: xem `apps-script/HUONG_DAN_CAI_DAT.md`.
+- Tạo file Excel để nhập vào Google Sheet: `python3 tools/export_sheet.py` → `xuat/NganHangCauHoi.xlsx`
+  (thư mục `xuat/` nằm trong `.gitignore`, không đưa lên GitHub).
