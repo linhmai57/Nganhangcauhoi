@@ -7,8 +7,9 @@ Trang web tĩnh (HTML/CSS/JS thuần), không cần server. Mở `index.html` ho
 - **Tạo đề theo QĐ 22/QĐ-HĐYKQG**: mỗi đề 120 câu, số câu theo 17 hệ cơ quan (mục 4.1) và
   6 miền năng lực (mục 4.2) đều nằm đúng trong khoảng trọng số quy định. Ưu tiên câu chưa gặp ở các đề trước.
 - **Real-time**: 120 câu / 3 tiếng, tự nộp khi hết giờ; đáp án và giải thích chỉ hiện sau khi nộp bài.
-- **Practice**: không giới hạn thời gian; chọn đáp án → bấm **Nộp** → hiện đáp án và giải thích →
+- **Practice**: 40 câu mỗi đợt (tỉ lệ theo QĐ 22, làm tròn cho đề ngắn), không giới hạn thời gian; chọn đáp án → bấm **Nộp** → hiện đáp án và giải thích →
   **Câu tiếp theo**; không quay lại câu trước; tự động lưu để làm tiếp.
+- **Đáp án – giải thích thống nhất** theo Hướng dẫn viết MCQ bậc cao: "Đáp án và lập luận" rồi lý do loại từng phương án nhiễu; bỏ các ghi chú nội bộ của người biên soạn.
 - **Phân tích sau mỗi đợt**: bảng tỉ lệ đúng theo miền năng lực và tiểu mục, chỉ ra miền cần cải thiện.
 
 ## Cấu trúc thư mục

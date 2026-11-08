@@ -3,7 +3,7 @@
  *  - Mỗi đề được tạo theo đúng cấu trúc QĐ 22/QĐ-HĐYKQG:
  *    số câu theo 17 hệ cơ quan (4.1) và 6 miền năng lực (4.2)
  *  - Real-time: 120 câu / 180 phút, đáp án chỉ hiện sau khi nộp bài
- *  - Practice : không giới hạn thời gian, nộp từng câu -> hiện đáp án + giải thích,
+ *  - Practice : 40 câu, không giới hạn thời gian, nộp từng câu -> hiện đáp án + giải thích,
  *               không quay lại câu trước, tự động lưu để làm tiếp
  *  - Sau mỗi đợt: bảng phân tích điểm yếu theo miền năng lực
  * ========================================================= */
@@ -11,7 +11,8 @@
   "use strict";
 
   const BP = window.BLUEPRINT;
-  const TOTAL = BP.totalQuestions;
+  const TOTAL = BP.totalQuestions;                 // số câu đề Real-time
+  const PRACTICE_TOTAL = BP.practiceQuestions || 40; // số câu mỗi đợt Practice
   const KEY_EXAM = "qb2_exam";
   const KEY_PRACTICE = "qb2_practice";
   const KEY_SEEN = "qb2_seen";
@@ -112,32 +113,48 @@
   }
 
   // ---------- Tạo đề theo QĐ 22 ----------
-  // Chia "total" câu theo trọng số trung bình, mỗi mục luôn nằm trong [min%, max%]
+  // Chia "total" câu theo trọng số trung bình (min+max)/2, mỗi mục nằm trong [min%, max%].
+  // Với đề ngắn, nếu khoảng [min%, max%] không chứa số nguyên nào thì nới ra số nguyên gần nhất
+  // (mục có trọng số tối thiểu > 0 luôn có ít nhất 1 câu).
   function apportion(items, total) {
-    const lo = items.map((it) => Math.ceil((it.min * total) / 100 - 1e-9));
-    const hi = items.map((it) => Math.floor((it.max * total) / 100 + 1e-9));
     const mids = items.map((it) => (it.min + it.max) / 2);
     const sumMid = mids.reduce((a, b) => a + b, 0);
     const quota = mids.map((m) => (m / sumMid) * total);
+    const floor1 = items.map((it) => (it.min > 0 ? 1 : 0));
+    const lo = [], hi = [];
+    items.forEach((it, i) => {
+      let l = Math.ceil((it.min * total) / 100 - 1e-9);
+      let h = Math.floor((it.max * total) / 100 + 1e-9);
+      if (l > h) { l = Math.floor((it.min * total) / 100); h = Math.ceil((it.max * total) / 100); }
+      lo.push(Math.max(floor1[i], l));
+      hi.push(Math.max(floor1[i], h));
+    });
     const counts = quota.map((q, i) => Math.min(hi[i], Math.max(lo[i], Math.floor(q))));
     let diff = total - counts.reduce((a, b) => a + b, 0);
-    while (diff !== 0) {
+    let guard = 1000;
+    while (diff !== 0 && guard--) {
+      const up = diff > 0;
       let best = -1;
+      const score = (i) => (up ? quota[i] - counts[i] : counts[i] - quota[i]);
       for (let i = 0; i < items.length; i++) {
-        const gap = quota[i] - counts[i];
-        if (diff > 0 && counts[i] < hi[i] && (best < 0 || gap > quota[best] - counts[best])) best = i;
-        if (diff < 0 && counts[i] > lo[i] && (best < 0 || gap < quota[best] - counts[best])) best = i;
+        if (up ? counts[i] < hi[i] : counts[i] > lo[i]) if (best < 0 || score(i) > score(best)) best = i;
+      }
+      if (best < 0) { // không thể giữ trong khoảng: chọn mục lệch ít nhất so với trọng số
+        for (let i = 0; i < items.length; i++) {
+          if (!up && counts[i] <= floor1[i]) continue;
+          if (best < 0 || score(i) > score(best)) best = i;
+        }
       }
       if (best < 0) break;
-      counts[best] += diff > 0 ? 1 : -1;
-      diff += diff > 0 ? -1 : 1;
+      counts[best] += up ? 1 : -1;
+      diff += up ? -1 : 1;
     }
     return counts;
   }
 
-  function planCounts() {
-    const sysCounts = apportion(BP.systems, TOTAL);
-    const compCounts = apportion(BP.competencies, TOTAL);
+  function planCounts(total) {
+    const sysCounts = apportion(BP.systems, total);
+    const compCounts = apportion(BP.competencies, total);
     return { sysCounts, compCounts };
   }
 
@@ -183,11 +200,11 @@
         while (rem > 0 && x[i][j] < orig[1 + i][1 + S.length + j]) { x[i][j]++; rem--; }
       }
     });
-    return { x, exact: flow === TOTAL };
+    return { x, exact: flow === sysCounts.reduce((a, b) => a + b, 0) };
   }
 
-  function buildTest() {
-    const { sysCounts, compCounts } = planCounts();
+  function buildTest(total) {
+    const { sysCounts, compCounts } = planCounts(total);
     const { x } = allocate(sysCounts, compCounts);
     const seen = new Set(load(KEY_SEEN) || []);
     let ids = [];
@@ -209,10 +226,13 @@
   function stemNode(q) {
     return el("div", { class: "q-stem" }, q.stem.map((t) => el("p", { text: t })));
   }
+  // Trình bày thống nhất theo Hướng dẫn viết MCQ: đáp án + lập luận, rồi lý do loại từng mồi nhử
   function explainNode(q) {
+    const ex = q.ex || { r: "", d: {} };
     return el("div", { class: "explain" },
-      el("p", null, el("b", { text: "Giải thích:" })),
-      (q.explanation || []).map((t) => el("p", { text: t })));
+      el("p", null, el("b", { text: `Đáp án và lập luận: ${q.answer}. ` }), ex.r),
+      el("p", { class: "ex-head" }, el("b", { text: "Vì sao không chọn các phương án khác:" })),
+      Object.keys(ex.d).sort().map((L) => el("p", { class: "ex-opt" }, el("b", { text: `${L}. ` }), ex.d[L])));
   }
   function metaNode(q) {
     const s = SYS.get(q.g), c = COMP.get(q.c);
@@ -287,7 +307,7 @@
     }
 
     app.append(
-      el("p", { class: "muted", text: `Ngân hàng hiện có ${BANK.size} câu hỏi thuộc ${BP.systems.length} hệ cơ quan. Mỗi đề gồm ${TOTAL} câu, chọn theo đúng tỉ lệ hệ cơ quan và miền năng lực của Quyết định 22/QĐ-HĐYKQG.` }),
+      el("p", { class: "muted", text: `Ngân hàng hiện có ${BANK.size} câu hỏi thuộc ${BP.systems.length} hệ cơ quan. Câu hỏi của mỗi đề được chọn theo tỉ lệ hệ cơ quan và miền năng lực của Quyết định 22/QĐ-HĐYKQG.` }),
       el("div", { class: "modes" },
         el("div", { class: "card mode-card" },
           el("div", { class: "icon", text: "⏱️" }),
@@ -301,7 +321,7 @@
           el("div", { class: "icon", text: "📝" }),
           el("h2", { text: "Practice (luyện tập)" }),
           el("ul", null,
-            el("li", { text: `${TOTAL} câu hỏi, không giới hạn thời gian` }),
+            el("li", { text: `${PRACTICE_TOTAL} câu hỏi mỗi đợt, không giới hạn thời gian` }),
             el("li", { text: "Bấm Nộp để xem ngay đáp án và giải thích của từng câu" }),
             el("li", { text: "Không quay lại câu trước; tự động lưu để làm tiếp lần sau" })),
           practiceNote, practiceActions)),
@@ -312,26 +332,28 @@
   }
 
   function blueprintNode() {
-    const { sysCounts, compCounts } = planCounts();
-    const sysRows = BP.systems.map((s, i) => el("tr", null,
-      el("td", { text: s.name }), el("td", { text: `${s.min}–${s.max}%` }), el("td", { text: sysCounts[i] })));
-    const compRows = BP.competencies.map((c, j) => el("tr", null,
-      el("td", { text: c.name }), el("td", { text: `${c.min}–${c.max}%` }), el("td", { text: compCounts[j] })));
-    const table = (head, rows, total) => el("div", { class: "table-wrap" }, el("table", { class: "tbl" },
-      el("thead", null, el("tr", null, el("th", { text: head }), el("th", { text: "Trọng số QĐ 22" }), el("th", { text: "Số câu/đề" }))),
-      el("tbody", null, rows, el("tr", { class: "total" }, el("td", { text: "Tổng" }), el("td"), el("td", { text: total })))));
+    const big = planCounts(TOTAL), small = planCounts(PRACTICE_TOTAL);
+    const table = (head, items, a, b) => el("div", { class: "table-wrap" }, el("table", { class: "tbl" },
+      el("thead", null, el("tr", null, el("th", { text: head }), el("th", { text: "Trọng số QĐ 22" }),
+        el("th", { text: `Real-time (${TOTAL} câu)` }), el("th", { text: `Practice (${PRACTICE_TOTAL} câu)` }))),
+      el("tbody", null,
+        items.map((it, i) => el("tr", null, el("td", { text: it.name }), el("td", { text: `${it.min}–${it.max}%` }),
+          el("td", { text: a[i] }), el("td", { text: b[i] }))),
+        el("tr", { class: "total" }, el("td", { text: "Tổng" }), el("td"), el("td", { text: TOTAL }), el("td", { text: PRACTICE_TOTAL })))));
     return el("details", { class: "card", style: "margin-top:20px" },
-      el("summary", { text: "Cấu trúc mỗi đề theo Quyết định 22/QĐ-HĐYKQG" }),
+      el("summary", { text: "Cấu trúc đề theo Quyết định 22/QĐ-HĐYKQG" }),
       el("div", { class: "two-col" },
-        table("Hệ cơ quan / đề mục", sysRows, TOTAL),
-        table("Miền năng lực", compRows, TOTAL)));
+        table("Hệ cơ quan / đề mục", BP.systems, big.sysCounts, small.sysCounts),
+        table("Miền năng lực", BP.competencies, big.compCounts, small.compCounts)),
+      el("p", { class: "muted", style: "font-size:13px;margin-bottom:0",
+        text: `Đề ${PRACTICE_TOTAL} câu quá ngắn để mọi mục nằm trọn trong khoảng trọng số (1 câu = ${(100 / PRACTICE_TOTAL).toFixed(1)}%): mỗi mục có ít nhất 1 câu, số câu được làm tròn gần nhất với trọng số trung bình.` }));
   }
 
   // ---------- Real-time ----------
   function startExam() {
     const now = Date.now();
     save(KEY_EXAM, {
-      ids: buildTest(), answers: {}, flags: {}, current: 0,
+      ids: buildTest(TOTAL), answers: {}, flags: {}, current: 0,
       startAt: now, endAt: now + BP.minutes * 60 * 1000, submitted: false
     });
     renderExam();
@@ -444,7 +466,7 @@
   // ---------- Practice ----------
   function startPractice() {
     save(KEY_PRACTICE, {
-      ids: buildTest(), answers: {}, submitted: {}, current: 0,
+      ids: buildTest(PRACTICE_TOTAL), answers: {}, submitted: {}, current: 0,
       startedAt: Date.now(), finished: false
     });
     renderPractice();

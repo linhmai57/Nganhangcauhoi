@@ -10,6 +10,7 @@ import collections
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import parse_docx  # noqa: E402
 import classify  # noqa: E402
+import normalize_explanation  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -31,12 +32,13 @@ def main(folder):
             'stem': q['stem'],
             'options': q['options'],
             'answer': q['answer'],
-            'explanation': q['explanation'],
+            'ex': normalize_explanation.normalize(q),
         })
     path = os.path.join(ROOT, 'data', 'questions.js')
     with open(path, 'w', encoding='utf-8') as f:
         f.write('/* Tự động tạo bởi tools/build_data.py từ các file Word ngân hàng câu hỏi.\n'
                 ' * g = nhóm (hệ cơ quan), p = vấn đề, c/s = miền/tiểu mục năng lực (xem data/blueprint.js).\n'
+                ' * ex.r = lập luận cho đáp án đúng, ex.d = lý do loại từng phương án nhiễu.\n'
                 ' * Có thể sửa trực tiếp trường "c" và "s" nếu muốn gán lại năng lực cho câu hỏi. */\n')
         f.write('window.PROBLEMS = ' + json.dumps({str(k): v for k, v in sorted(problems.items())},
                                                  ensure_ascii=False, indent=0) + ';\n')

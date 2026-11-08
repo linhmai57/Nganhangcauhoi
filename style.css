@@ -315,3 +315,5 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 details.card summary { cursor: pointer; font-weight: 600; }
 details.card[open] summary { margin-bottom: 12px; }
 .two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+.explain .ex-head { margin-top: 10px; }
+.explain .ex-opt { padding-left: 4px; }

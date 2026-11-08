@@ -86,8 +86,8 @@ def build(c):
 
 
 def parse_dir(folder):
-    files = sorted(glob.glob(os.path.join(folder, '*.docx')),
-                   key=lambda f: re.search(r'Nhom_(\d+)', f).group(1))
+    files = [f for f in glob.glob(os.path.join(folder, '*.docx')) if re.search(r'Nhom_(\d+)', f)]
+    files.sort(key=lambda f: int(re.search(r'Nhom_(\d+)', f).group(1)))
     allq = []
     for f in files:
         qs = parse_file(f)

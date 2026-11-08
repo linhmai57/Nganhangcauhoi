@@ -2,11 +2,14 @@
  * CẤU TRÚC ĐỀ KIỂM TRA (TEST BLUEPRINT)
  * Theo Quyết định số 22/QĐ-HĐYKQG ngày 21/4/2026 của Hội đồng Y khoa Quốc gia.
  * min/max: trọng số (%) trong đề, mục 4.1 và 4.2 của Phụ lục.
- * Số câu mỗi đề = tổng số câu x trọng số trung bình (min+max)/2, làm tròn và luôn nằm trong [min, max].
+ * Số câu mỗi đề = tổng số câu x trọng số trung bình (min+max)/2, làm tròn và nằm trong [min, max].
+ * Với đề ngắn (40 câu), khoảng [min, max] có thể nhỏ hơn 1 câu: khi đó mỗi mục vẫn có ít nhất 1 câu
+ * và số câu được làm tròn gần nhất với trọng số trung bình.
  */
 window.BLUEPRINT = {
-  totalQuestions: 120,   // số câu mỗi đề
+  totalQuestions: 120,   // số câu mỗi đề Real-time
   minutes: 180,          // thời gian chế độ Real-time (phút)
+  practiceQuestions: 40, // số câu mỗi đợt Practice
 
   // 4.1. Trọng số của 17 đề mục (hệ cơ quan và các vấn đề) – id trùng số Nhóm trong file câu hỏi
   systems: [
