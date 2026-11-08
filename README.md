@@ -1,55 +1,44 @@
-# Luyện tập ngân hàng câu hỏi
+# Khoa Y – Luyện thi đánh giá năng lực quốc gia
 
-Trang web tĩnh (HTML/CSS/JS thuần), không cần server, không cần cài đặt.
+Trang web tĩnh (HTML/CSS/JS thuần), không cần server. Mở `index.html` hoặc đăng lên GitHub Pages.
 
-## Hai chế độ luyện tập
+## Tính năng
 
-| | Real-time (thi thử) | Practice (luyện tập) |
-|---|---|---|
-| Số câu | 120 câu chọn ngẫu nhiên | Toàn bộ ngân hàng |
-| Thời gian | 3 tiếng, hết giờ tự nộp bài | Không giới hạn |
-| Đáp án & giải thích | Xem sau khi nộp bài | Xem ngay sau mỗi câu |
-| Lưu tiến độ | Có (lỡ tải lại trang vẫn làm tiếp, đồng hồ vẫn chạy) | Có, lần sau vào làm tiếp |
+- **Tạo đề theo QĐ 22/QĐ-HĐYKQG**: mỗi đề 120 câu, số câu theo 17 hệ cơ quan (mục 4.1) và
+  6 miền năng lực (mục 4.2) đều nằm đúng trong khoảng trọng số quy định. Ưu tiên câu chưa gặp ở các đề trước.
+- **Real-time**: 120 câu / 3 tiếng, tự nộp khi hết giờ; đáp án và giải thích chỉ hiện sau khi nộp bài.
+- **Practice**: không giới hạn thời gian; chọn đáp án → bấm **Nộp** → hiện đáp án và giải thích →
+  **Câu tiếp theo**; không quay lại câu trước; tự động lưu để làm tiếp.
+- **Phân tích sau mỗi đợt**: bảng tỉ lệ đúng theo miền năng lực và tiểu mục, chỉ ra miền cần cải thiện.
 
-Tính năng thêm: bảng điều hướng câu hỏi, đánh dấu câu cần xem lại, làm lại các câu sai,
-lọc câu đúng/sai khi xem kết quả, phím tắt (`1`-`4` hoặc `A`-`D` để chọn, `←` `→` để chuyển câu).
+## Cấu trúc thư mục
 
-## Cách chạy
+| File | Nội dung |
+|---|---|
+| `data/blueprint.js` | Trọng số QĐ 22, số câu mỗi đề, thời gian thi |
+| `data/questions.js` | Ngân hàng câu hỏi (tạo tự động từ file Word) |
+| `tools/build_data.py` | Chuyển file Word → `data/questions.js` |
+| `tools/classify.py` | Quy tắc tự gán miền năng lực |
 
-Mở file `index.html` bằng trình duyệt (Chrome, Edge, Firefox...).
+## Cập nhật ngân hàng câu hỏi từ file Word
 
-Đưa lên mạng cho sinh viên dùng: bật **GitHub Pages** (Settings → Pages → chọn nhánh) hoặc
-tải cả thư mục lên bất kỳ hosting tĩnh nào.
+1. Đặt các file `PCTU_Nhom_XX_....docx` vào một thư mục.
+2. Chạy: `python3 tools/build_data.py <thư_mục>` (cần `pip install python-docx`).
 
-## Nhập dữ liệu câu hỏi
+Định dạng file Word: tiêu đề `NHÓM xx – ...` (Title), `VẤN ĐỀ xxx — ...` (Heading 1),
+`Ca xxxx: ...` (Heading 2), tiếp theo là bệnh cảnh, câu hỏi, các phương án `A.`–`D.`,
+dòng `Đáp án: X` và phần giải thích.
 
-Sửa file `data/questions.js`, mỗi câu hỏi có dạng:
+## Nhãn miền năng lực
 
-```js
-{
-  id: 1,                                   // mã câu hỏi, không trùng
-  question: "Nội dung câu hỏi",
-  options: ["Phương án A", "Phương án B", "Phương án C", "Phương án D"],
-  answer: "B",                             // đáp án đúng
-  explanation: "Phần giải thích"
-},
-```
+File Word hiện chưa có nhãn năng lực nên hệ thống **tự gán** dựa trên lời dẫn câu hỏi và nội dung đáp án đúng
+(ví dụ "Chẩn đoán phù hợp nhất?" → Chẩn đoán; "Xử trí ưu tiên?" → Xử trí; Nhóm 16 → Học tập và cải thiện;
+Nhóm 17 → Giao tiếp / An toàn người bệnh).
 
-- Số phương án có thể nhiều hoặc ít hơn 4, tự động đánh chữ A, B, C...
-- Có thể bổ sung câu hỏi mới bất cứ lúc nào; tiến độ Practice cũ vẫn được giữ, câu mới tự thêm vào cuối.
-
-## Thay đổi số câu / thời gian thi
-
-Trong `app.js`, sửa phần `CONFIG`:
-
-```js
-const CONFIG = {
-  EXAM_QUESTIONS: 120,
-  EXAM_MINUTES: 180
-};
-```
+- Muốn gán thủ công: thêm dòng `Năng lực: <tên năng lực>` vào từng ca trong file Word rồi chạy lại script,
+  hoặc sửa trực tiếp trường `"c"` / `"s"` trong `data/questions.js`.
+- Mã năng lực: `KHCB`, `CD` (BS, CLS, CDX, TL), `XT` (PB, THUOC, CT, PH), `HTCT`, `GT`, `HT` – xem `data/blueprint.js`.
 
 ## Lưu ý
 
-Tiến độ được lưu trong trình duyệt (localStorage) của từng máy. Đổi máy, đổi trình duyệt
-hoặc xóa dữ liệu duyệt web thì tiến độ sẽ mất.
+Tiến độ lưu trong trình duyệt (localStorage) của từng máy; đổi máy/trình duyệt hoặc xóa dữ liệu duyệt web sẽ mất tiến độ.
